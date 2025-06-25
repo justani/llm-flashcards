@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Training Flashcards</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom CSS for the 3D flip effect */
+        .card-scene {
+            perspective: 1000px;
+        }
+        .card-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.7s;
+            transform-style: preserve-3d;
+        }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden; /* Safari */
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+        .is-flipped .card-container {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-slate-900">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl sm:text-5xl font-bold text-slate-800 dark:text-white">LLM Flashcards</h1>
+            <p class="text-slate-600 dark:text-slate-400 mt-2">Click on a card to flip it and reveal the answer.</p>
+        </header>
+
+        <main id="flashcard-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Flashcards will be dynamically inserted here -->
+        </main>
+        
+        <footer class="text-center mt-12 text-slate-500 dark:text-slate-400">
+            <p>A fun way to test your LLM knowledge.</p>
+        </footer>
+    </div>
+
+    <script>
+        const flashcardData = [
+            // Part 1: The Big Picture & Pre-training
+            {
+                question: "What are the five key components of training LLMs mentioned at the start of the lecture?",
+                answer: "The five key components are: <br> 1. <strong>Architecture</strong> (e.g., Transformers) <br> 2. <strong>Training Loss & Algorithm</strong> (How the model is trained) <br> 3. <strong>Data</strong> (What the model is trained on) <br> 4. <strong>Evaluation</strong> (How to measure progress) <br> 5. <strong>Systems</strong> (How to run the model on hardware efficiently)"
+            },
+            {
+                question: "According to the speaker, which of these components do academia and industry tend to focus on most?",
+                answer: "<strong>Academia:</strong> Traditionally focuses more on <strong>architecture</strong> and <strong>training algorithms/losses</strong>. <br><br> <strong>Industry:</strong> Focuses more on <strong>data, evaluation, and systems</strong>, as these are often the most impactful factors."
+            },
+            {
+                question: "What is the fundamental task of an auto-regressive language model?",
+                answer: "The fundamental task is to <strong>predict the next token (or word) in a sequence</strong>, given all the preceding tokens. It models the probability of a sequence by factoring it into a product of conditional probabilities."
+            },
+            {
+                question: "Why are tokenizers used instead of simply splitting text by words or using individual characters?",
+                answer: "<strong>Word-based splitting is not robust</strong> (fails on typos, new words). <br> <strong>Character-based splitting is too long</strong> (computationally infeasible for Transformers). <br><br> Tokenizers are a middle ground, grouping common character sub-sequences into single tokens for a manageable vocabulary and sequence length."
+            },
+            {
+                question: "What is perplexity, and what is the intuition behind it?",
+                answer: "Perplexity is a metric for evaluating pre-trained models. <br><br> <strong>Intuition:</strong> It represents the <strong>number of tokens the model is 'hesitating' between</strong> when predicting the next token. A lower perplexity is better."
+            },
+            {
+                question: "List at least four key steps in cleaning 'dirty internet' data from a source like Common Crawl.",
+                answer: "1. <strong>Extracting text</strong> from HTML and removing boilerplate. <br> 2. <strong>Filtering undesirable content</strong> (NSFW, toxic, PII). <br> 3. <strong>De-duplication</strong> of repeated text. <br> 4. <strong>Heuristic filtering</strong> to remove low-quality documents. <br> 5. <strong>Model-based filtering</strong> to prioritize high-quality documents. <br> 6. <strong>Domain re-weighting</strong> to up-sample valuable data."
+            },
+            {
+                question: "What are scaling laws in the context of LLMs?",
+                answer: "Scaling laws describe the predictable relationship where a model's performance (test loss) improves as you increase <strong>compute</strong>, <strong>model size (parameters)</strong>, or <strong>data size</strong>. They allow teams to predict the performance of very large models by training smaller ones."
+            },
+            {
+                question: "What was the key finding of the 'Chinchilla' paper regarding the optimal allocation of compute?",
+                answer: "The Chinchilla paper found that for optimal training, you should use approximately <strong>20 tokens of data for every 1 parameter</strong> in the model. Previous models were often undertrained (too large for the data they saw)."
+            },
+            // Part 2: Post-training (Alignment)
+            {
+                question: "Why is a 'post-training' or 'alignment' step necessary after pre-training?",
+                answer: "A pre-trained model is just a next-token predictor. Post-training is necessary to teach the model to <strong>follow instructions</strong> and behave like a helpful AI assistant, rather than just completing text patterns."
+            },
+            {
+                question: "What is Supervised Fine-Tuning (SFT)? Does it require a large amount of data?",
+                answer: "SFT is the process of fine-tuning a pre-trained LLM on high-quality instruction-and-response pairs. <br><br> It does <strong>not</strong> require a large amount of data; performance plateaus after a few thousand examples, suggesting the model is primarily learning a <strong>format or style</strong>, not new knowledge."
+            },
+            {
+                question: "What is the core difference between SFT and Reinforcement Learning from Human Feedback (RLHF)?",
+                answer: "<strong>SFT:</strong> Learns by cloning a single 'correct' answer provided by a human (behavioral cloning). <br><br> <strong>RLHF:</strong> Learns from human <strong>preferences</strong> by choosing the better of two or more generated responses."
+            },
+            {
+                question: "What was the original complex RLHF algorithm, and what is the simpler, more direct method now common?",
+                answer: "<strong>Original Method:</strong> PPO (Proximal Policy Optimization). This used a separate reward model and a complex reinforcement learning loop. <br><br> <strong>Simpler Method:</strong> DPO (Direct Preference Optimization). This method bypasses the reward model and uses a simple loss function to directly optimize for preferred responses."
+            },
+            {
+                question: "Why can't we use perplexity to evaluate instruction-tuned models? What is the standard evaluation method instead?",
+                answer: "Perplexity is not a good metric because aligned models are optimized to be a <strong>policy</strong> that generates good answers, not to model a true probability distribution. <br><br> The standard evaluation method is <strong>human preference rating</strong>, often in a blind, head-to-head comparison (like a 'Chatbot Arena')."
+            },
+            {
+                question: "What is a major bias or pitfall when using an LLM (like GPT-4) to automate the evaluation of other LLMs?",
+                answer: "A major pitfall is that LLMs often have a strong <strong>verboseness bias</strong>, meaning they tend to rate longer answers as better, even if the content isn't superior."
+            },
+            // Part 3: Systems & Cost
+            {
+                question: "If GPU compute improves faster than memory speed, what is the consequence for training efficiency?",
+                answer: "The consequence is that <strong>communication is often the bottleneck</strong>. The GPU's compute cores sit idle while waiting for data. This is why maximizing Model Flop Utilization (MFU) is a key goal, and even ~50% is considered good."
+            },
+            {
+                question: "What is 'operator fusion'?",
+                answer: "Operator fusion is a technique that combines multiple sequential operations into a single computational 'kernel.' It reduces the slow memory communication bottleneck by performing multiple operations in the GPU core before writing the final result back to memory."
+            }
+        ];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const grid = document.getElementById('flashcard-grid');
+            if (!grid) return;
+
+            // Generate HTML for each flashcard
+            flashcardData.forEach((item, index) => {
+                const cardElement = document.createElement('div');
+                cardElement.className = 'card-scene h-80 rounded-xl'; // Set a fixed height for consistency
+                
+                cardElement.innerHTML = `
+                    <div class="card-container cursor-pointer">
+                        <!-- Front of the card (Question) -->
+                        <div class="card-face p-6 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
+                            <h2 class="text-xl font-semibold text-slate-800 dark:text-white">${item.question}</h2>
+                            <span class="absolute bottom-4 right-4 text-xs font-mono text-slate-400 dark:text-slate-500">Q${index + 1}</span>
+                        </div>
+                        <!-- Back of the card (Answer) -->
+                        <div class="card-face card-back p-6 bg-emerald-500 dark:bg-emerald-600 text-white rounded-xl shadow-lg">
+                            <p class="text-md">${item.answer}</p>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(cardElement);
+            });
+
+            // Add click listener to all cards for the flip effect
+            const cards = document.querySelectorAll('.card-scene');
+            cards.forEach(card => {
+                card.addEventListener('click', () => {
+                    card.classList.toggle('is-flipped');
+                });
+            });
+        });
+
+    </script>
+</body>
+</html>
